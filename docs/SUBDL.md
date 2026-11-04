@@ -2,9 +2,10 @@
 
 ## Setup and behavior
 
-Set `SUBDL_API_KEY` in the server's `.env`, restart, and install the addon as
-usual. For Dutch subtitles set `LANGUAGES=nl`. SubDL's key is server-side only;
-there is no new key field on the configure page or in generated install URLs.
+In server mode set `SUBDL_API_KEY` in the server's `.env`, restart, and install
+the addon as usual. In personal mode enter your own key on `/configure`; see
+[credential policy](CREDENTIALS.md). For Dutch subtitles set `LANGUAGES=nl`. SubDL's key is server-side only;
+there is no key in generated install URLs.
 At least one of `OS_API_KEY` or `SUBDL_API_KEY` must be configured.
 
 SubDL supplies **candidate files, not verified timing**. The existing rules apply:
@@ -53,8 +54,9 @@ explicit matching child season and episode metadata. Unknown language names,
 ambiguous packs and unsupported files are skipped. Unknown API response shapes
 fail safely rather than selecting an arbitrary file.
 
-The addon has no user authentication: anyone who can reach it can consume the
-server's quota. Use a private deployment or an authenticated gateway. This
+In server mode, anyone who can reach the addon can consume the configured
+server quota. Personal mode requires an installation token and uses only that
+profile's keys; see [credential policy](CREDENTIALS.md). This
 provider adds no public sharing/uploading of subtitles. Follow source rights
 and service terms; downloading a subtitle does not grant republication rights.
 
@@ -76,9 +78,10 @@ There is no AI translation, publication or persistent storage in this change.
 
 ## Instellen en werking
 
-Zet `SUBDL_API_KEY` in het `.env`-bestand van de server en herstart de addon.
+Zet in serverstand `SUBDL_API_KEY` in `.env` en herstart de addon. In persoonlijke
+stand vul je je eigen sleutel via `/configure` in; zie [sleutelbeleid](CREDENTIALS.md).
 Gebruik `LANGUAGES=nl` voor Nederlandse ondertitels. De sleutel blijft op de
-server en krijgt geen nieuw veld op de configuratiepagina of in de installatie-URL.
+server en komt niet in de installatie-URL.
 Minstens één van `OS_API_KEY` en `SUBDL_API_KEY` moet ingesteld zijn.
 
 SubDL levert **kandidaatbestanden, geen bewijs van juiste timing**. De volgorde
@@ -108,8 +111,9 @@ blijvende vertaalopslag. Zoekopdrachten stoppen na maximaal drie pagina's met
 per ondertitel en 20 seconden per aanvraag. Quota-/accountfouten veroorzaken een
 pauze; Retry-After wordt begrensd op 60 seconden tot één uur.
 
-De addon heeft zelf geen toegangscontrole. Gebruik hem privé of achter een
-poort met authenticatie. Deze wijziging uploadt of deelt geen ondertitels.
+In serverstand deelt iedereen met toegang het beheerdersquota. Persoonlijke
+stand vereist een installatietoken en gebruikt alleen de sleutels van dat profiel;
+zie [sleutelbeleid](CREDENTIALS.md). Deze wijziging uploadt of deelt geen ondertitels.
 Bronrechten en voorwaarden blijven gelden.
 
 Tests gebruiken eigen gegenereerde bestanden en nagebootste providerantwoorden.

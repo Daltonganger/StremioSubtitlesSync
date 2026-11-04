@@ -176,16 +176,21 @@ serves all devices correctly.
 SubDL can supply additional subtitle candidates without changing the timing
 reference rules. See [SubDL setup and limits (English / Nederlands)](docs/SUBDL.md).
 
-Settings come from two places:
-
-- **`.env`**, for your own private instance. This is the recommended place.
-- **The `/configure` page**, whose values are packed into the install URL. They
-  override `.env` for that install.
+The administrator selects **server credentials** or **mandatory personal keys**
+with `CREDENTIAL_MODE=server|user`. There is no hybrid or fallback between
+accounts. See [credential setup, Docker settings and migration (English /
+Nederlands)](docs/CREDENTIALS.md). Non-secret language preferences can still be
+set per installation. Personal keys are submitted via `/configure` and stored
+in encrypted server profiles; Stremio receives a revocable profile token.
 
 Changes to `.env` need a restart of the addon.
 
 | Variable | Default | What it does |
 |---|---|---|
+| `CREDENTIAL_MODE` | `server` | `server`: only administrator keys; `user`: mandatory personal profiles. See [setup](docs/CREDENTIALS.md). |
+| `PROFILE_DIR` | `data/profiles` | Persistent personal-profile directory. |
+| `PROFILE_ENCRYPTION_KEY_FILE` | | Mounted file containing a stable random 32-byte hex encryption key, required in personal mode (or use `PROFILE_ENCRYPTION_KEY`). |
+| `TRUST_PROXY` | `loopback` | Trusted reverse-proxy addresses/CIDRs only. |
 | `OS_API_KEY` | | OpenSubtitles API key. Required unless SubDL is configured. |
 | `SUBDL_API_KEY` | | Optional SubDL API key, **`.env` only**. See [SubDL setup and limits](docs/SUBDL.md). |
 | `OS_USERNAME` | | OpenSubtitles username. Downloads then count against your account's quota. |
@@ -283,13 +288,13 @@ header with the offset, frame rate ratio and match strength.
 
 ## Security and privacy
 
-- **Keep keys in `.env`, not on the configure page.** Anything typed into
-  `/configure` becomes part of the install URL, passwords and API keys included.
-  That URL is stored in your Stremio account and appears in logs and
-  screenshots. With keys in `.env`, the install URL holds no secrets.
-- **Anyone who can reach the addon can use your keys.** It has no login. On a
-  home network that is usually fine. Do not expose the port to the internet
-  without putting authentication in front of it.
+- **Keep administrator keys in the runtime environment.** Personal mode stores
+  submitted keys encrypted on the server. Install URLs carry bearer profile
+  tokens, which must also be kept private and can be revoked. Old URLs containing
+  raw keys must be reinstalled; see [migration](docs/CREDENTIALS.md).
+- **Server mode shares the administrator accounts with everyone who can reach
+  it.** Personal mode uses only the account tied to a valid installation token.
+  Restrict access to intended users and protect your proxy configuration.
 - **Logs hide secrets.** The config part of request URLs is written as
   `<config>`, and TorBox download links are cut before their token.
 - **The Windows service runs with minimal rights**, as its own virtual account

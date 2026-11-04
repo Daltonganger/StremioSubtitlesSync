@@ -250,6 +250,43 @@ test("personal setup URL works through SDK listing and subtitle delivery with on
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test("personal AI settings are encrypted, validated and never inherit administrator AI credentials", async () => {
+  const names = ["AI_ENABLED", "AI_BASE_URL", "AI_API_KEY", "AI_MODEL", "AI_ALLOWED_BASE_URLS"];
+  const saved = names.map((name) => process.env[name]);
+  try {
+    process.env.AI_ENABLED = "true";
+    process.env.AI_BASE_URL = "https://host-ai.invalid/v1";
+    process.env.AI_API_KEY = "host-ai-key";
+    process.env.AI_MODEL = "host-model";
+    process.env.AI_ALLOWED_BASE_URLS = "https://own-ai.invalid/v1";
+    const plain = createProfile(parseProfile(own));
+    assert.equal(resolveConfig({ profile: plain }).translation, undefined);
+    const ai = { ...own, aiEnabled: "true", aiBaseUrl: "https://own-ai.invalid/v1", aiApiKey: "owned-ai-key", aiModel: "owned-model", aiHeaders: '{"X-API-Key":"owned-header-key"}' };
+    const response = await post("/profiles", ai);
+    assert.equal(response.status, 201);
+    const body = await response.json() as { profile: string; manifestUrl: string };
+    assert.ok(!JSON.stringify(body).includes("owned-ai-key"));
+    assert.ok(!JSON.stringify(body).includes("owned-header-key"));
+    const resolved = resolveConfig({ profile: body.profile });
+    assert.equal(resolved.translation?.apiKey, "owned-ai-key");
+    assert.equal(resolved.translation?.baseUrl, "https://own-ai.invalid/v1");
+    assert.equal(resolved.translation?.model, "owned-model");
+    assert.equal((await post("/profiles", { ...ai, aiBaseUrl: "https://internal.invalid" })).status, 400);
+    const raw = { profile: body.profile, aiApiKey: "secret-key", aiHeaders: "secret-header" };
+    assert.deepEqual(decodeConfig(encodeConfig(raw)), { profile: body.profile });
+    process.env.CREDENTIAL_MODE = "server";
+    assert.equal(resolveConfig({ profile: body.profile }).translation?.apiKey, "host-ai-key");
+    process.env.CREDENTIAL_MODE = "user";
+    revokeProfile(body.profile);
+    assert.equal(resolveConfig({ profile: body.profile }).translation, undefined);
+  } finally {
+    process.env.CREDENTIAL_MODE = "user";
+    names.forEach((name, index) => {
+      if (saved[index] === undefined) delete process.env[name]; else process.env[name] = saved[index];
+    });
+  }
+});
+
 test("registration has a global write limit even with rotating IP headers", async () => {
   for (let i = 0; i < 100; i++) {
     const response = await post("/profiles", {}, { "X-Forwarded-For": `192.0.2.${i}` });

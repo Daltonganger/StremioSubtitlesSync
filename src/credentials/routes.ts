@@ -1,3 +1,4 @@
+import { translationSettings, TranslationError } from "../translation/config";
 import express, { Router, type Request } from "express";
 import { baseUrl } from "../context";
 import { decodeConfig } from "../config";
@@ -35,11 +36,13 @@ export function credentialRoutes(): Router {
     registrations++;
     try {
       const profile = parseProfile(req.body);
+      translationSettings(profile, true);
       const token = createProfile(profile);
       const config = encodeURIComponent(JSON.stringify({ profile: token }));
       res.status(201).json({ profile: token, manifestUrl: `${baseUrl()}/${config}/manifest.json` });
     } catch (error) {
       // File-system/crypto errors can include local paths; never return them.
+      if (error instanceof TranslationError) { res.status(400).json({ error: error.message }); return; }
       const message = error instanceof Error ? error.message : "";
       const safe = ["Expected a configuration object", "Unknown or invalid configuration field",
         "Supply your own OpenSubtitles or SubDL API key", "Profile capacity reached; contact the administrator"];

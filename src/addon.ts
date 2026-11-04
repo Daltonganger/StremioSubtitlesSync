@@ -1,3 +1,4 @@
+import { translationUrl } from "./translation/source";
 import { addonBuilder, type Subtitle } from "stremio-addon-sdk";
 import { baseUrl } from "./context";
 import { encodeConfig, resolveConfig, type RawUserConfig, type ResolvedConfig } from "./config";
@@ -101,7 +102,7 @@ export async function getSubtitles(args: SubtitlesArgs): Promise<{
     season: video.type === "episode" ? video.season : undefined,
     episode: video.type === "episode" ? video.episode : undefined,
     moviehash: args.extra.videoHash,
-    languages: [...new Set([...config.languages, ...config.anchorLanguages])],
+    languages: [...new Set([...config.languages, ...config.anchorLanguages, ...(config.translation?.sourceLanguages ?? [])])],
   });
 
   if (all.length === 0) {
@@ -137,7 +138,6 @@ export async function getSubtitles(args: SubtitlesArgs): Promise<{
   const subtitles: Subtitle[] = [];
   for (const language of config.languages) {
     const inLanguage = all.filter((s) => s.language === language);
-    if (inLanguage.length === 0) continue;
 
     // Hash matches need no work, so they go first and take the top slots.
     const exact = rankCandidates(inLanguage.filter((s) => s.moviehashMatch));
@@ -165,6 +165,32 @@ export async function getSubtitles(args: SubtitlesArgs): Promise<{
         lang: label(language, entry.timing, config.verboseLabels),
       });
       offered++;
+    }
+
+    // Only a missing native-language entry enables the optional paid fallback.
+    if (offered === 0 && config.translation) {
+      for (const sourceLanguage of config.translation.sourceLanguages) {
+        if (sourceLanguage === language) continue;
+        const sources = all.filter((candidate) => candidate.language === sourceLanguage);
+        const ranked = [
+          ...rankCandidates(sources.filter((candidate) => candidate.moviehashMatch)),
+          ...rankCandidates(sources.filter((candidate) => !candidate.moviehashMatch)),
+        ];
+        for (const candidate of ranked) {
+          const file: FileRef = { fileId: candidate.fileId, lang: candidate.language, provider: candidate.provider };
+          const entry = buildEntry(candidate.moviehashMatch, anchor, embedded, file, hint, { base, configToken, slug, ext });
+          if (entry.timing === "unsynced" && !config.includeUnsynced) continue;
+          subtitles.push({
+            id: `ai-${language}-${candidate.provider ?? "os"}-${candidate.fileId}`,
+            url: translationUrl(base, configToken, entry.url, language, entry.timing, slug, ext),
+            // Provenance remains visible even when normal subtitles use ISO labels.
+            lang: `${languageName(language)} - AI translation from ${languageName(sourceLanguage)} (${TIMING_NOTE[entry.timing]})`,
+          });
+          offered++;
+          break;
+        }
+        if (offered) break;
+      }
     }
   }
 

@@ -9,8 +9,7 @@ publisher or addon user, selects exactly one policy at runtime:
 | `user` | Each user must create a personal profile. No fallback to any administrator credential. |
 
 There is no hybrid mode, automatic account switching or quota pooling. The
-policy currently covers OpenSubtitles, SubDL and TorBox. AI translation is not
-implemented by this PR; its later implementation must follow the same policy.
+policy currently covers OpenSubtitles, SubDL and TorBox. AI translation follows the same policy; see [AI setup](TRANSLATION.md).
 
 ## Server mode
 
@@ -98,8 +97,7 @@ precies één stand. De publiceerder van het Docker-image bepaalt de sleutels ni
 | `user` | Iedereen moet een eigen profiel met persoonlijke sleutels maken. Nooit terugvallen op een beheerdersaccount. |
 
 Geen mengstand, automatisch wisselen of samenvoegen van quota. Dit geldt nu voor
-OpenSubtitles, SubDL en TorBox. AI-vertaling wordt hiermee nog niet toegevoegd;
-die moet later hetzelfde beleid volgen.
+OpenSubtitles, SubDL en TorBox. AI-vertaling volgt hetzelfde beleid; zie [AI-instellingen](TRANSLATION.md).
 
 In `server` stelt de beheerder minstens een OpenSubtitles- of SubDL-sleutel in.
 Iedereen met toegang gebruikt zijn accounts/quota; ook TorBox-toegang voor

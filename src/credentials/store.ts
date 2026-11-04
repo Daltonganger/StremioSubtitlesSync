@@ -2,7 +2,8 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import fs from "node:fs";
 import path from "node:path";
 
-export const CREDENTIAL_FIELDS = ["osApiKey", "osUsername", "osPassword", "subdlApiKey", "torboxApiKey"] as const;
+export const CREDENTIAL_FIELDS = ["osApiKey", "osUsername", "osPassword", "subdlApiKey", "torboxApiKey",
+  "aiEnabled", "aiBaseUrl", "aiApiKey", "aiModel", "aiHeaders", "aiTokenParameter", "aiJsonMode", "aiSourceLanguages"] as const;
 export const SETTING_FIELDS = ["languages", "anchorLanguages", "maxPerLang", "format", "labels", "unsynced"] as const;
 export type Profile = Partial<Record<typeof CREDENTIAL_FIELDS[number] | typeof SETTING_FIELDS[number], string>>;
 const TOKEN = /^p_[A-Za-z0-9_-]{43}$/;

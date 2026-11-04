@@ -323,8 +323,11 @@ describe("reading a timing reference out of the video", { skip: !hasFfmpeg() }, 
     assert.equal(fixed[0]!.text, CUES[0]!.text);
   });
 
-  test("SubDL-only candidate is listed and served through the verified embedded HTTP route", async () => {
+  test("SubDL-only native and AI candidates use the verified embedded HTTP route", async () => {
     const originalFetch = globalThis.fetch;
+    const aiFields = ["AI_ENABLED", "AI_BASE_URL", "AI_API_KEY", "AI_MODEL", "AI_SOURCE_LANGUAGES"];
+    const previousAi = aiFields.map((name) => process.env[name]);
+    let aiCalls = 0;
     const previousOs = process.env.OS_API_KEY;
     const previousSd = process.env.SUBDL_API_KEY;
     const previousLanguages = process.env.LANGUAGES;
@@ -333,6 +336,13 @@ describe("reading a timing reference out of the video", { skip: !hasFfmpeg() }, 
     process.env.LANGUAGES = "en";
     globalThis.fetch = async (input, init) => {
       const url = new URL(String(input));
+      if (url.hostname === "owned-embedded-ai.invalid") {
+        aiCalls++;
+        const request = JSON.parse(JSON.parse(String(init?.body)).messages[1].content);
+        return Response.json({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify({
+          cues: request.cues.map((cue: { id: number }) => ({ id: cue.id, text: `Eigen vertaling ${cue.id}` })),
+        }) } }] });
+      }
       if (url.hostname === "api.subdl.com") return Response.json({
         status: true, results: [{ imdb_id: "tt1234567", type: "movie" }],
         subtitles: [{ language: "English", unpack_files: [{
@@ -352,7 +362,9 @@ describe("reading a timing reference out of the video", { skip: !hasFfmpeg() }, 
       const { subtitleRoutes } = await import("../src/routes/subtitles.js");
       const { hashRemoteFile } = await import("../src/embedded/oshash.js");
       const { parseSubtitle } = await import("../src/subtitles/parse.js");
+      const { translationRoutes } = await import("../src/translation/routes.js");
       const app = express();
+      app.use(translationRoutes());
       app.use((req, _res, next) => runWithRequest(req, next));
       app.use(subtitleRoutes());
       app.use(getRouter(addonInterface));
@@ -375,7 +387,29 @@ describe("reading a timing reference out of the video", { skip: !hasFfmpeg() }, 
       for (let i = 0; i < cues.length; i++) {
         assert.ok(Math.abs(cues[i]!.start - CUES[i]!.start) <= 100);
       }
+      process.env.LANGUAGES = "nl";
+      process.env.AI_ENABLED = "true";
+      process.env.AI_BASE_URL = "https://owned-embedded-ai.invalid/v1";
+      process.env.AI_API_KEY = "owned-embedded-ai-key";
+      process.env.AI_MODEL = "owned-model";
+      process.env.AI_SOURCE_LANGUAGES = "en";
+      const aiListing = await fetch(`http://127.0.0.1:${port}/subtitles/movie/tt1234567/${extra}.json`);
+      const aiBody = await aiListing.json() as { subtitles: { id: string; url: string }[] };
+      assert.equal(aiBody.subtitles.length, 1);
+      assert.ok(aiBody.subtitles[0]!.id.startsWith("ai-nl-"));
+      assert.equal(aiCalls, 0);
+      const aiResponse = await fetch(aiBody.subtitles[0]!.url);
+      assert.equal(aiResponse.status, 200);
+      assert.equal(aiResponse.headers.get("x-subtitle-sync"), "synced-embedded");
+      const translated = parseSubtitle(await aiResponse.text());
+      assert.equal(translated.length, CUES.length);
+      assert.ok(aiCalls > 0);
+      assert.equal(translated[0]!.text, "Eigen vertaling 1");
+      for (let i = 0; i < translated.length; i++) assert.ok(Math.abs(translated[i]!.start - CUES[i]!.start) <= 100);
     } finally {
+      aiFields.forEach((name, index) => {
+        if (previousAi[index] === undefined) delete process.env[name]; else process.env[name] = previousAi[index];
+      });
       globalThis.fetch = originalFetch;
       if (previousOs === undefined) delete process.env.OS_API_KEY;
       else process.env.OS_API_KEY = previousOs;

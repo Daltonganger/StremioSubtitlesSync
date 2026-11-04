@@ -1,3 +1,5 @@
+import { translationSettings, TranslationError, type TranslationSettings } from "./translation/config";
+import { log } from "./log";
 import { CREDENTIAL_FIELDS, credentialMode, readProfile, type Profile } from "./credentials/store";
 
 /**
@@ -26,6 +28,7 @@ export interface RawUserConfig {
 }
 
 export interface ResolvedConfig {
+  translation?: TranslationSettings;
   /** Resolved from the server environment or an encrypted personal profile. */
   subdlApiKey?: string;
   osApiKey: string;
@@ -102,11 +105,21 @@ export function resolveConfig(raw: RawUserConfig | undefined): ResolvedConfig {
     osApiKey: process.env.OS_API_KEY, osUsername: process.env.OS_USERNAME,
     osPassword: process.env.OS_PASSWORD, subdlApiKey: process.env.SUBDL_API_KEY,
     torboxApiKey: process.env.TORBOX_API_KEY,
+    aiEnabled: process.env.AI_ENABLED, aiBaseUrl: process.env.AI_BASE_URL,
+    aiApiKey: process.env.AI_API_KEY, aiModel: process.env.AI_MODEL,
+    aiHeaders: process.env.AI_HEADERS, aiTokenParameter: process.env.AI_TOKEN_PARAMETER,
+    aiJsonMode: process.env.AI_JSON_MODE, aiSourceLanguages: process.env.AI_SOURCE_LANGUAGES,
   } : stored ?? {};
+  let translation: TranslationSettings | undefined;
+  try { translation = translationSettings(keys, mode === "user"); }
+  catch (error) {
+    log.warn(error instanceof TranslationError ? error.message : "Invalid AI configuration");
+  }
   const maxPerLang = Number(settings.maxPerLang ?? process.env.MAX_PER_LANG ?? 5);
   const format = (settings.format ?? process.env.FORMAT ?? "srt").toLowerCase();
 
   return {
+    translation,
     subdlApiKey: keys.subdlApiKey?.trim() || undefined,
     osApiKey: (keys.osApiKey ?? "").trim(),
     osUsername: (keys.osUsername ?? "").trim() || undefined,

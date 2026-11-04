@@ -11,6 +11,17 @@ export function credentialPage(): string {
 <label>OpenSubtitles password / wachtwoord<input name="osPassword" type="password" autocomplete="new-password"></label>
 <label>SubDL API key / API-sleutel<input name="subdlApiKey" type="password" autocomplete="new-password"></label>
 <label>TorBox API key (optional) / API-sleutel (optioneel)<input name="torboxApiKey" type="password" autocomplete="new-password"></label>
+<details><summary>Optional AI translation / Optionele AI-vertaling</summary>
+<p>Only when your language is missing, using an endpoint approved by this host. Text leaves this server for that endpoint and may incur costs. / Alleen als je taal ontbreekt, via een door de beheerder toegestaan endpoint. De tekst gaat naar dat endpoint en kan kosten veroorzaken.</p>
+<label>AI translation / AI-vertaling<select name="aiEnabled"><option value="">Disabled / Uit</option><option value="true">Enabled / Aan</option></select></label>
+<label>API base URL / API-basis-URL<input name="aiBaseUrl" type="url" placeholder="https://your-gateway.example/v1"></label>
+<label>AI API key (optional for local servers) / AI-sleutel (optioneel voor lokale servers)<input name="aiApiKey" type="password" autocomplete="new-password"></label>
+<label>Model<input name="aiModel"></label>
+<label>Source languages / Brontalen<input name="aiSourceLanguages" placeholder="en"></label>
+<label>Extra headers (JSON, optional) / Extra headers (JSON, optioneel)<input name="aiHeaders" type="password" autocomplete="new-password"></label>
+<label>Output token parameter / Uitvoertokenparameter<select name="aiTokenParameter"><option value="">Host default / Standaard beheerder</option><option>max_tokens</option><option>max_completion_tokens</option></select></label>
+<label>JSON response mode / JSON-antwoordmodus<select name="aiJsonMode"><option value="">Host default / Standaard beheerder</option><option value="off">Prompt only / Alleen prompt</option><option value="object">JSON object</option></select></label>
+</details>
 <label>Subtitle languages / Ondertiteltalen<input name="languages" value="nl"></label>
 <label>Reference languages / Referentietalen<input name="anchorLanguages" value="en"></label>
 <label>Format / Formaat<select name="format"><option>srt</option><option>vtt</option></select></label>
@@ -26,7 +37,7 @@ form.onsubmit=async function(event){event.preventDefault();result.textContent='S
 try{const config=Object.fromEntries(new FormData(form));const response=await fetch('/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
 const data=await response.json();if(!response.ok)throw new Error(data.error||'Request failed / Aanvraag mislukt');
 access.value=data.profile;result.textContent=data.manifestUrl;
-for(const name of ['osApiKey','osUsername','osPassword','subdlApiKey','torboxApiKey'])form.elements[name].value='';
+for(const name of ['osApiKey','osUsername','osPassword','subdlApiKey','torboxApiKey','aiApiKey','aiHeaders'])form.elements[name].value='';
 }catch(error){result.textContent=error.message;}};
 revoke.onclick=async function(){try{let token=access.value.trim();if(!token.startsWith('p_'))token=JSON.parse(decodeURIComponent(new URL(token).pathname.split('/')[1])).profile;const response=await fetch('/profiles/revoke',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({profile:token})});if(!response.ok)throw new Error('Revocation failed / Intrekken mislukt');result.textContent='Revoked / Ingetrokken';access.value='';}catch(error){result.textContent=error.message;}};
 </script></html>`;

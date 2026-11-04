@@ -173,6 +173,11 @@ serves all devices correctly.
 
 ## Configuration
 
+Optional [AI translation setup and limits (English / Nederlands)](docs/TRANSLATION.md)
+adds a labelled fallback when the requested subtitle language is missing. It
+uses a configurable Chat Completions endpoint and the host credential policy;
+AI calls start only when the entry is selected.
+
 SubDL can supply additional subtitle candidates without changing the timing
 reference rules. See [SubDL setup and limits (English / Nederlands)](docs/SUBDL.md).
 
@@ -191,6 +196,9 @@ Changes to `.env` need a restart of the addon.
 | `PROFILE_DIR` | `data/profiles` | Persistent personal-profile directory. |
 | `PROFILE_ENCRYPTION_KEY_FILE` | | Mounted file containing a stable random 32-byte hex encryption key, required in personal mode (or use `PROFILE_ENCRYPTION_KEY`). |
 | `TRUST_PROXY` | `loopback` | Trusted reverse-proxy addresses/CIDRs only. |
+| `AI_ENABLED` | `false` | Enable optional translation in server mode. Personal mode enables it in the encrypted profile. See [AI setup](docs/TRANSLATION.md). |
+| `AI_BASE_URL` / `AI_MODEL` / `AI_API_KEY` | | Selected server AI endpoint, model and optional key; never per-install URL fields. |
+| `AI_ALLOWED_BASE_URLS` | | Exact endpoint allowlist for personal AI settings. |
 | `OS_API_KEY` | | OpenSubtitles API key. Required unless SubDL is configured. |
 | `SUBDL_API_KEY` | | Optional SubDL API key, **`.env` only**. See [SubDL setup and limits](docs/SUBDL.md). |
 | `OS_USERNAME` | | OpenSubtitles username. Downloads then count against your account's quota. |
@@ -300,6 +308,7 @@ header with the offset, frame rate ratio and match strength.
 - **The Windows service runs with minimal rights**, as its own virtual account
   that can only read the project and write its logs.
 - **What leaves your network:** searches and downloads to OpenSubtitles and/or SubDL, and,
+  with AI enabled and selected, subtitle text to the configured AI endpoint;
   with a TorBox key, account listings and small range reads of your own files
   to TorBox.
 

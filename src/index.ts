@@ -1,3 +1,4 @@
+import { translationRoutes } from "./translation/routes";
 import express from "express";
 import { credentialMode, validateProfileStore } from "./credentials/store";
 import { credentialRoutes } from "./credentials/routes";
@@ -77,6 +78,7 @@ app.get("/configure", servePage);
 app.get("/:config/configure", servePage);
 
 // Our own file routes come first; the SDK router owns everything else.
+app.use(translationRoutes());
 app.use(subtitleRoutes());
 app.use(getRouter(addonInterface));
 

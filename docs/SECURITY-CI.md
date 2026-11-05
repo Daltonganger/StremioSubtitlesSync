@@ -81,6 +81,14 @@ Ordinary `npm test` can skip media fixtures when FFmpeg/ffprobe are unavailable;
   automatic merge. Repository settings may require maintainers to enable or
   approve workflows and Dependabot.
 
+The first Linux run exposed an existing 429 retry failure with Ubuntu's FFmpeg.
+Probes now capture warning-level stderr: FFmpeg 6.1 logs the numeric HTTP status
+at [warning level](https://github.com/FFmpeg/FFmpeg/blob/n6.1.1/libavformat/http.c#L764),
+while error-only output can collapse 429 into a generic 4XX message. Existing
+real-HTTP fixture tests require both retry success and persistent-refusal failure.
+Successful command stderr is not logged; failed-command messages retain the
+existing URL-query redaction. Generic 4XX failures are not treated as 429.
+
 These checks use generated fixtures and local HTTP servers. They do not prove
 live provider/model quality, TV behavior, Windows service behavior, NAS
 performance, deployment durability or correct production proxy configuration.

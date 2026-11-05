@@ -8,6 +8,7 @@ import type { AddressInfo } from "node:net";
 import express from "express";
 import { getRouter } from "stremio-addon-sdk";
 import { randomUUID } from "node:crypto";
+import { TranslationLibrary } from "../src/library/store";
 import { toSrt } from "../src/subtitles/serialize";
 import { parseSubtitle } from "../src/subtitles/parse";
 import { translationRoutes } from "../src/translation/routes";
@@ -194,12 +195,13 @@ test("disabled AI, unconfigured targets and forbidden source operations fail bef
 });
 
 test("personal AI installation uses its own account/model and revocation blocks completed translations", async () => {
-  const fields = ["CREDENTIAL_MODE", "PROFILE_DIR", "PROFILE_ENCRYPTION_KEY", "PROFILE_ENCRYPTION_KEY_FILE", "AI_ALLOWED_BASE_URLS"];
+  const fields = ["CREDENTIAL_MODE", "PROFILE_DIR", "PROFILE_ENCRYPTION_KEY", "PROFILE_ENCRYPTION_KEY_FILE", "AI_ALLOWED_BASE_URLS", "TRANSLATION_LIBRARY_DIR"];
   const saved = fields.map((name) => process.env[name]);
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "subsync-personal-ai-"));
   try {
     process.env.CREDENTIAL_MODE = "user";
     process.env.PROFILE_DIR = directory;
+    process.env.TRANSLATION_LIBRARY_DIR = path.join(directory, "translations");
     process.env.PROFILE_ENCRYPTION_KEY = "ab".repeat(32);
     delete process.env.PROFILE_ENCRYPTION_KEY_FILE;
     process.env.AI_ALLOWED_BASE_URLS = "https://owned-ai.invalid/v1";
@@ -228,6 +230,35 @@ test("personal AI installation uses its own account/model and revocation blocks 
     fields.forEach((name, index) => {
       if (saved[index] === undefined) delete process.env[name]; else process.env[name] = saved[index];
     });
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("HTTP translations persist text and timing metadata and reuse it after an API-key change", async () => {
+  const fields = ["TRANSLATION_LIBRARY_DIR", "AI_API_KEY"];
+  const saved = fields.map((name) => process.env[name]);
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "subsync-http-library-"));
+  process.env.TRANSLATION_LIBRARY_DIR = directory;
+  process.env.AI_API_KEY = randomUUID();
+  try {
+    const entry = (await listing(1000001))[0]!;
+    const calls = aiCalls;
+    const first = await fetch(entry.url);
+    assert.equal(first.status, 200);
+    assert.match(first.headers.get("x-subtitle-library") ?? "", /^[a-f0-9]{64}$/);
+    assert.match(first.headers.get("x-subtitle-timing-variant") ?? "", /^[a-f0-9]{64}$/);
+    assert.equal(aiCalls - calls, 4);
+    const library = new TranslationLibrary(directory);
+    const stored = library.list()[0]!;
+    assert.equal(library.variant(stored.scope, stored.id, stored.variants[0]!)?.metadata.provenance.videoId, "tt1000001");
+    assert.equal(library.variant(stored.scope, stored.id, stored.variants[0]!)?.metadata.provenance.videoHash, "0123456789abcdef");
+    process.env.AI_API_KEY = randomUUID();
+    const second = await fetch(entry.url);
+    assert.equal(second.status, 200);
+    assert.equal(second.headers.get("x-subtitle-library"), first.headers.get("x-subtitle-library"));
+    assert.equal(aiCalls - calls, 4);
+  } finally {
+    fields.forEach((name, index) => { if (saved[index] === undefined) delete process.env[name]; else process.env[name] = saved[index]; });
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });

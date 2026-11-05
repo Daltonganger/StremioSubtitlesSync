@@ -28,6 +28,7 @@ export interface RawUserConfig {
 }
 
 export interface ResolvedConfig {
+  shareLibrary?: boolean;
   translation?: TranslationSettings;
   /** Resolved from the server environment or an encrypted personal profile. */
   subdlApiKey?: string;
@@ -119,6 +120,7 @@ export function resolveConfig(raw: RawUserConfig | undefined): ResolvedConfig {
   const format = (settings.format ?? process.env.FORMAT ?? "srt").toLowerCase();
 
   return {
+    shareLibrary: process.env.TRANSLATION_LIBRARY_SHARED === "true" && (mode === "server" || isOn(stored?.librarySharingConsent)),
     translation,
     subdlApiKey: keys.subdlApiKey?.trim() || undefined,
     osApiKey: (keys.osApiKey ?? "").trim(),

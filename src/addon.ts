@@ -182,7 +182,7 @@ export async function getSubtitles(args: SubtitlesArgs): Promise<{
           if (entry.timing === "unsynced" && !config.includeUnsynced) continue;
           subtitles.push({
             id: `ai-${language}-${candidate.provider ?? "os"}-${candidate.fileId}`,
-            url: translationUrl(base, configToken, entry.url, language, entry.timing, slug, ext),
+            url: translationUrl(base, configToken, entry.url, language, entry.timing, slug, ext, { videoId: args.id, release: filename, videoHash: hint.videoHash, videoSize: hint.videoSize }),
             // Provenance remains visible even when normal subtitles use ISO labels.
             lang: `${languageName(language)} - AI translation from ${languageName(sourceLanguage)} (${TIMING_NOTE[entry.timing]})`,
           });

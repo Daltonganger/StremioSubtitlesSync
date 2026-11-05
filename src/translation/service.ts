@@ -1,7 +1,8 @@
+import { artifactIdentity, openLibrary, type LibraryContext } from "../library/store";
 import { createHash } from "node:crypto";
 import { TtlCache } from "../cache";
 import type { Cue } from "../subtitles/types";
-import { LANGUAGE, PROMPT_VERSION, TranslationError, type TranslationSettings } from "./config";
+import { LANGUAGE, TranslationError, type TranslationSettings } from "./config";
 import { translateBatch, type TextCue } from "./client";
 
 const completed = new TtlCache<string[]>(60 * 60_000, 50);
@@ -36,15 +37,19 @@ function batches(cues: Cue[], settings: TranslationSettings): TextCue[][] {
 export async function translatedCues(
   cues: Cue[], source: string, target: string, settings: TranslationSettings,
   transport: typeof fetch = globalThis.fetch,
+  context?: LibraryContext,
 ): Promise<Cue[]> {
   if (!LANGUAGE.test(source) || !LANGUAGE.test(target) || source === target || !settings.sourceLanguages.includes(source)) {
     throw new TranslationError("Unsupported translation language pair", 400);
   }
   const parts = batches(cues, settings);
   const scope = digest([settings.baseUrl, settings.apiKey, settings.headers]);
-  const key = digest([scope, settings.model, settings.tokenParameter, settings.maxOutputTokens,
-    settings.jsonMode, settings.batchCues, settings.batchCharacters, PROMPT_VERSION, source, target, cues.map((cue) => cue.text)]);
-  let texts = completed.get(key);
+  const library = context ? openLibrary() : undefined;
+  const identity = artifactIdentity(cues, source, target, settings);
+  const memoryKey = digest([scope, identity.id]);
+  const key = library ? `${library.root}:${context!.scope}:${identity.id}` : memoryKey;
+  const saved = library?.load(context!.scope, identity.id);
+  let texts = library ? saved?.texts : completed.get(key);
   if (!texts) {
     let task = pending.get(key);
     if (!task) {
@@ -56,6 +61,7 @@ export async function translatedCues(
         throw new TranslationError("AI hourly request limit reached", 429,
           Math.max(1, Math.ceil((windowStart + 3600_000 - Date.now()) / 1000)));
       }
+      const releaseSpace = library?.reserve(cues);
       reserved += parts.length;
       let remaining = parts.length;
       task = Promise.resolve().then(async () => {
@@ -68,6 +74,12 @@ export async function translatedCues(
             reserved--; remaining--; calls++;
             result.push(...await translateBatch(part, source, target, settings, signal, transport));
           }
+          if (library) {
+            releaseSpace?.();
+            const artifact = library.save(context!.scope, identity, result);
+            library.saveVariant(context!.scope, artifact, cues, context!);
+            return artifact.texts;
+          }
           completed.set(key, result);
           return result;
         } catch (error) {
@@ -75,7 +87,7 @@ export async function translatedCues(
           const pauseMs = (safe.retryAfterSeconds ?? 60) * 1000;
           cooldown.set(scope, Date.now() + pauseMs, pauseMs);
           throw safe;
-        } finally { reserved -= remaining; pending.delete(key); }
+        } finally { releaseSpace?.(); reserved -= remaining; pending.delete(key); }
       });
       pending.set(key, task);
     }
@@ -86,5 +98,11 @@ export async function translatedCues(
       })]);
     } finally { clearTimeout(timer); }
   }
-  return cues.map((cue, index) => ({ ...cue, text: texts![index]! }));
+  const result = cues.map((cue, index) => ({ ...cue, text: texts![index]! }));
+  if (library) {
+    const artifact = library.load(context!.scope, identity.id);
+    if (!artifact) throw new TranslationError("Completed translation is missing from the library", 503, 30);
+    library.saveVariant(context!.scope, artifact, cues, context!);
+  }
+  return result;
 }

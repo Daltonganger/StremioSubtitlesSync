@@ -13,6 +13,7 @@ export function credentialPage(): string {
 <label>TorBox API key (optional) / API-sleutel (optioneel)<input name="torboxApiKey" type="password" autocomplete="new-password"></label>
 <details><summary>Optional AI translation / Optionele AI-vertaling</summary>
 <p>Only when your language is missing, using an endpoint approved by this host. Text leaves this server for that endpoint and may incur costs. / Alleen als je taal ontbreekt, via een door de beheerder toegestaan endpoint. De tekst gaat naar dat endpoint en kan kosten veroorzaken.</p>
+${process.env.TRANSLATION_LIBRARY_DIR && process.env.TRANSLATION_LIBRARY_SHARED === "true" ? '<label><input style="width:auto;margin-right:.5rem" type="checkbox" name="librarySharingConsent">Allow other users on this host to reuse my saved translations. API keys remain private. Shared copies remain until the operator deletes them.</label>' : ''}
 <label>AI translation / AI-vertaling<select name="aiEnabled"><option value="">Disabled / Uit</option><option value="true">Enabled / Aan</option></select></label>
 <label>API base URL / API-basis-URL<input name="aiBaseUrl" type="url" placeholder="https://your-gateway.example/v1"></label>
 <label>AI API key (optional for local servers) / AI-sleutel (optioneel voor lokale servers)<input name="aiApiKey" type="password" autocomplete="new-password"></label>

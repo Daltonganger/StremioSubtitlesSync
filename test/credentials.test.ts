@@ -287,6 +287,23 @@ test("personal AI settings are encrypted, validated and never inherit administra
   }
 });
 
+test("personal library sharing requires explicit protected profile consent as well as host opt-in", () => {
+  const saved = process.env.TRANSLATION_LIBRARY_SHARED;
+  try {
+    process.env.TRANSLATION_LIBRARY_SHARED = "true";
+    const privateToken = createProfile(parseProfile(own));
+    assert.equal(resolveConfig({ profile: privateToken }).shareLibrary, false);
+    const optedIn = createProfile(parseProfile({ ...own, librarySharingConsent: "on" }));
+    assert.equal(resolveConfig({ profile: optedIn }).shareLibrary, true);
+    process.env.TRANSLATION_LIBRARY_SHARED = "false";
+    assert.equal(resolveConfig({ profile: optedIn }).shareLibrary, false);
+    const raw = { profile: privateToken, librarySharingConsent: "on" };
+    assert.deepEqual(decodeConfig(encodeConfig(raw)), { profile: privateToken });
+  } finally {
+    if (saved === undefined) delete process.env.TRANSLATION_LIBRARY_SHARED; else process.env.TRANSLATION_LIBRARY_SHARED = saved;
+  }
+});
+
 test("registration has a global write limit even with rotating IP headers", async () => {
   for (let i = 0; i < 100; i++) {
     const response = await post("/profiles", {}, { "X-Forwarded-For": `192.0.2.${i}` });

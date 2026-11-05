@@ -173,6 +173,10 @@ serves all devices correctly.
 
 ## Configuration
 
+[Persistent translation storage and reviewed SubDL publishing](docs/LIBRARY.md)
+are opt-in. Set a dedicated persistent volume to keep completed translations
+across restarts; publication remains disabled until explicitly reviewed/configured.
+
 Optional [AI translation setup and limits (English / Nederlands)](docs/TRANSLATION.md)
 adds a labelled fallback when the requested subtitle language is missing. It
 uses a configurable Chat Completions endpoint and the host credential policy;
@@ -196,6 +200,9 @@ Changes to `.env` need a restart of the addon.
 | `PROFILE_DIR` | `data/profiles` | Persistent personal-profile directory. |
 | `PROFILE_ENCRYPTION_KEY_FILE` | | Mounted file containing a stable random 32-byte hex encryption key, required in personal mode (or use `PROFILE_ENCRYPTION_KEY`). |
 | `TRUST_PROXY` | `loopback` | Trusted reverse-proxy addresses/CIDRs only. |
+| `TRANSLATION_LIBRARY_DIR` | | Persistent translation volume; unset keeps memory-only behavior. See [library setup](docs/LIBRARY.md). |
+| `TRANSLATION_LIBRARY_SHARED` | `false` | Explicit instance-wide output reuse; personal profiles are private otherwise. |
+| `SUBDL_PUBLISHING_ENABLED` | `false` | Allow reviewed operator-CLI uploads with separate upload credentials. |
 | `AI_ENABLED` | `false` | Enable optional translation in server mode. Personal mode enables it in the encrypted profile. See [AI setup](docs/TRANSLATION.md). |
 | `AI_BASE_URL` / `AI_MODEL` / `AI_API_KEY` | | Selected server AI endpoint, model and optional key; never per-install URL fields. |
 | `AI_ALLOWED_BASE_URLS` | | Exact endpoint allowlist for personal AI settings. |

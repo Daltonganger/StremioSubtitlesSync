@@ -120,8 +120,10 @@ for one hour, up to 50 results. Identity includes source text revision, language
 pair, model, prompt version, batching/options and hashed endpoint credentials.
 Text reuse is independent of timing, so each response keeps its own aligned
 source timestamps. Credentials/account output are not pooled. A restart loses
-jobs and this cache, and may require another paid translation. **Persistent
-translation storage and publishing remain the next separate PR.**
+jobs and this memory cache. Optional [persistent library storage](LIBRARY.md) now
+keeps completed text and release-specific timing across restarts, with explicit
+sharing and a separate reviewed publication workflow. Without that volume, a
+restart may require another paid translation.
 
 ## Validation scope
 
@@ -209,11 +211,11 @@ niet zelf probeert. Automatisch opnieuw proberen en direct afspelen op LG/tv
 moeten nog worden getest. Geen belofte dat een nieuwe vertaling meteen klaar
 is. Intrekken van een profiel stopt een al lopende taak niet.
 
-Gelijke gelijktijdige aanvragen delen één taak. Alleen complete gevalideerde
-tekst blijft maximaal een uur in het geheugen, maximaal 50 resultaten, gescheiden
-op account/model/bronrevision/taal/vertaalprofiel. Elke weergave behoudt de eigen
-brontiming. Na herstart vervalt de cache en kan opnieuw vertalen kosten geven.
-**Blijvende vertaalopslag en publicatie volgen in een aparte PR.**
+Persistent storage and reviewed publication are now available as an opt-in
+[persistent library](LIBRARY.md). Without it, only the one-hour memory cache is
+used and restarting can require another paid translation. With the library,
+complete text and release-specific timing are kept separately across restarts.
+Personal sharing and community publication require explicit configuration.
 
 Tests gebruiken eigen ondertitels, nagebootste API's en gegenereerde MKV/range-
 fixtures. Geen echte AI-kosten of uploads. Live model-/kwaliteits-/kostencontrole,

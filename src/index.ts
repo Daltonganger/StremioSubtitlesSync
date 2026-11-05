@@ -1,3 +1,4 @@
+import { openLibrary } from "./library/store";
 import { translationRoutes } from "./translation/routes";
 import express from "express";
 import { credentialMode, validateProfileStore } from "./credentials/store";
@@ -10,6 +11,7 @@ import { log, logToFile } from "./log";
 import { subtitleRoutes } from "./routes/subtitles";
 
 if (credentialMode() === "user") validateProfileStore();
+openLibrary();
 
 const port = Number(process.env.PORT ?? 7000);
 const app = express();

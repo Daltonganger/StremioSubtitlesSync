@@ -48,6 +48,13 @@ jobs:
           tags: subtitle-sync:ci
       - name: Check container behavior without provider calls
         run: node scripts/container-check.cjs subtitle-sync:ci
+      - name: Start the actual Compose service with fixture credentials
+        env:
+          SUBTITLE_SYNC_PORT: '0'
+        run: |
+          docker tag subtitle-sync:ci subtitle-sync:local
+          docker compose --project-name subsync-compose-ci up --detach --wait --wait-timeout 90 --no-build
+          docker compose --project-name subsync-compose-ci exec -T subtitle-sync node docker/healthcheck.cjs
       - name: Scan runtime OS and application dependencies
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -61,4 +68,6 @@ jobs:
           timeout: 5m
       - name: Remove fixture configuration
         if: always()
-        run: rm -f .env
+        run: |
+          docker compose --project-name subsync-compose-ci down --volumes --remove-orphans
+          rm -f .env

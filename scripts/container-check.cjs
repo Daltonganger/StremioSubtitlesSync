@@ -56,6 +56,8 @@ async function check() {
       assert.equal(fs.existsSync('/app/.env'), false);
       assert.equal(fs.existsSync('/app/.git'), false);
       assert.equal(fs.existsSync('/app/dist/test'), false);
+      assert.equal(fs.existsSync('/usr/local/lib/node_modules/npm'), false);
+      assert.equal(fs.existsSync('/usr/local/bin/npm'), false);
       assert.throws(() => fs.writeFileSync('/app/readonly-check', 'fixture'), { code: 'EROFS' });
       fs.writeFileSync('/tmp/scratch-check', 'temporary');
       fs.writeFileSync('/data/persistence-check', 'owned fixture');

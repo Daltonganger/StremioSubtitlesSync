@@ -47,6 +47,8 @@ docker compose up -d --wait
 - The build installs locked dependencies without lifecycle scripts, compiles
   source, then removes development dependencies. The runtime includes ffprobe,
   ffmpeg, CA certificates and Tini for signal forwarding and child reaping.
+  Bundled npm, Corepack and Yarn are removed from the runtime; use the compiled
+  Node commands for maintenance. Build-stage npm remains available for installs.
 - The allowlist in `.dockerignore` keeps `.env`, keys, Git history, local
   dependencies, tests and data outside the build context. Configuration is
   supplied at runtime; never add credentials as build arguments or image layers.
@@ -132,7 +134,8 @@ absence of dev tooling/config/Git/test files, media binaries, manifest/CORS,
 health failure and recovery, restart and replacement persistence, and shutdown
 without forced killing. No subtitle/provider/model endpoints are called.
 
-GitHub CI builds and runs these checks natively on AMD64 and ARM64. A pinned
+GitHub CI builds and runs these checks natively on AMD64 and ARM64, then starts
+the actual Compose service with fixture credentials and checks its health. A pinned
 Trivy action scans runtime OS and application packages and fails on high/critical
 findings with fixes available. Unfixed findings and lower severities are outside
 that gate; it is not a zero-CVE guarantee. Registry/database failures also fail

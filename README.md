@@ -17,6 +17,7 @@ already in sync. No more pressing the subtitle delay button every few minutes.
 - [How it works](#how-it-works)
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
+- [Docker and NAS hosting](#docker-and-nas-hosting)
 - [Installing the addon in Stremio](#installing-the-addon-in-stremio)
 - [Configuration](#configuration)
 - [Running as a Windows service](#running-as-a-windows-service)
@@ -112,6 +113,14 @@ npm run dev
 
 Check that it runs: <http://127.0.0.1:7000/health> should answer
 `{"ok":true,...}`.
+
+## Docker and NAS hosting
+
+A non-root image with FFmpeg/ffprobe, health checks and a Compose setup is
+available. It uses a read-only root filesystem and a persistent `/data` volume;
+the default host port is loopback only. See [Docker instructions](docs/DOCKER.md)
+for building, TV/reverse-proxy access, storage, limits and automated AMD64/ARM64
+container checks. Optional credential/library features require their own PRs.
 
 ## Installing the addon in Stremio
 
